@@ -5,6 +5,8 @@
 #include "uart.h"
 #include "timers.h"
 
+//#define MAIN
+#ifdef MAIN
 int main(void) {
 
     int baud_rate = 115200;
@@ -55,9 +57,12 @@ int main(void) {
         if (Uart1_tx(tx, strlen(tx)) == ERROR) {
             continue;
         }
+
+        //DelayMicros(100000);
         
         char rx[50];
         if (Uart6_rx(rx, strlen(tx)) == SUCCESS) {
+            rx[strlen(tx)] = '\0'; // Add termination bit at the end to prevent overflow
             printf("%s", rx);
             //printf("%d\n", counter);
             counter++;
@@ -66,3 +71,4 @@ int main(void) {
         
     }
 }
+#endif
