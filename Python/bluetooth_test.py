@@ -55,8 +55,36 @@ async def send_message(msg : str, count : int, delay : float):
         
         print("All messages printed.")
 
+
+### Data Reception from the PC ###
+# It seems to work for the counter (although data is a bit messy, we might need to transmit bit by bit with a communication protocol)
+def notification_handler(sender, data):
+    print(f"Sender: {sender} -> Message: {data.decode()}")
+    
+async def receive_message():
+    # Establish connection with the address as a client
+    async with BleakClient(ADAFRUIT_BLE_MAC_ADDR) as client:
+        # Notify that connection was established
+        print("Connection made with Bluefruit...")
         
-asyncio.run(send_message("Hello World!", 5, 0.1))
+        # Enable notification to receive incoming messsages using the receive ID and callback to handle messages.
+        await client.start_notify(ADAFRUIT_BLE_RX_UUID, notification_handler)
+        
+        print("Listening to messages...")
+        try:
+            while (True):
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            print("Stopping notifications...")
+            client.stop_notify(ADAFRUIT_BLE_RX_UUID)
+        
+        
+
+# We were able to get recpetion to work, we were able to get messages to be transmitted from the STM32's UART to the Bluefruit, then to the PC.
+asyncio.run(receive_message())
+
+#asyncio.run(send_message("Hello World!", 5, 0.1))
+#asyncio.run(scan_for_devices())
 
 # Alternative Source: https://github.com/Jakeler/ble-serial/blob/main/README.md
 # GATT? https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend/ble-gatt
