@@ -327,7 +327,7 @@ HAL_UART_Receive_IT(UART6, Message Holder, Messasge Size) -> This takes bytes fr
 /******************************************************************************
  * Testing
  *****************************************************************************/
-#define BLE_UART_TEST
+//#define BLE_UART_TEST
 #ifdef BLE_UART_TEST
 int main() {
 
