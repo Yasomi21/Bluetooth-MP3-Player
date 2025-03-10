@@ -11,6 +11,7 @@
 #include "Board.h"
 #include "uart.h"
 #include "timers.h"
+#include "leds.h"
 
 /******************************************************************************
  * User Defines
@@ -20,10 +21,13 @@
 /******************************************************************************
  * Main
  *****************************************************************************/
+//#define MAIN
+#ifdef MAIN
 int main() {
     // Initialization //
     BOARD_Init();
     TIMER_Init();
+    LEDS_Init();
 
     // UART6 SETUP //
     // Since UART1 is used by the SPI, we must use UART6
@@ -107,7 +111,22 @@ int main() {
         };
     }
 
+    // UART RECEIVE TEST //
+    // while (TRUE) {
+    //     char uart_rx;
+    //     int8_t rx_status = Uart6_rx(uart_rx, 1); // Read only one byte from the buffer
+    //     //set_leds(uart_rx);
+    //     printf("%c\r\n", uart_rx);
+    //     // if (uart_rx == '\0') {
+    //     //     //printf("%s\r\n");
+    //     //     set_leds(0x00);
+    //     // } else {
+    //     //     set_leds(0xFF);
+    //     // }
+    // }
+
 
 
     return SUCCESS;
 }
+#endif

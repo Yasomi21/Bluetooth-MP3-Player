@@ -46,6 +46,19 @@ async def send_message(msg : str, count : int, delay : float):
     # Attempt to write a message to the Adafruit bluetooth
     # First, establish the address as a client.
     async with BleakClient(ADAFRUIT_BLE_MAC_ADDR) as client:
+        print("Connection made with Bluefruit...")
+        
+    #     # Transmit a message to the Bluefruit and wait for a respopnse
+    #     await client.write_gatt_char(ADAFRUIT_BLE_TX_UUID, msg.encode(), response=True)
+    #     print(f"Sent Message: {msg}")
+        
+    #     # Read the UART buffer to see if anything if message was received.
+    #     try:
+    #         response = await client.read_gatt_char(ADAFRUIT_BLE_TX_UUID)
+    #     except Exception as e:
+    #         print("Could not verify reception (this may be expected).", e)
+        
+        
         # Send the message in succession 'n' times, where n is the count
         for i in range(count):
             # Send the message, use encode() to convert strings to byte-format, don't wait for response...
@@ -80,8 +93,11 @@ async def receive_message():
         
         
 
-# We were able to get recpetion to work, we were able to get messages to be transmitted from the STM32's UART to the Bluefruit, then to the PC.
+# We were able to get reception to work, we were able to get messages to be transmitted from the STM32's UART to the Bluefruit, then to the PC.
 asyncio.run(receive_message())
+
+# Send messsages once every second 1000 times.
+#asyncio.run(send_message("Hello World!", 1000, 1))
 
 #asyncio.run(send_message("Hello World!", 5, 0.1))
 #asyncio.run(scan_for_devices())
