@@ -94,10 +94,10 @@ async def receive_message():
         
 
 # We were able to get reception to work, we were able to get messages to be transmitted from the STM32's UART to the Bluefruit, then to the PC.
-asyncio.run(receive_message())
+#asyncio.run(receive_message())
 
 # Send messsages once every second 1000 times.
-#asyncio.run(send_message("Hello World!", 1000, 1))
+asyncio.run(send_message("Hello!", 1000, 1))
 
 #asyncio.run(send_message("Hello World!", 5, 0.1))
 #asyncio.run(scan_for_devices())

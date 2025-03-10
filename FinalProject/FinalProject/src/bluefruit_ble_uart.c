@@ -341,13 +341,13 @@ int main() {
         set_leds(0xFF);
     }
 
-    // Populate the transmit buffer
-    uint8_t ch = 'A';
-    for (int i = 0; i < (BUFFER_SIZE); i++) {
-        BLE_PutChar(ch + i + 6);
-        //set_leds(tx_buffer.tail);
-        printf("Val: %d \n", tx_buffer.tail);
-    }
+    // // Populate the transmit buffer
+    // uint8_t ch = 'A';
+    // for (int i = 0; i < (BUFFER_SIZE); i++) {
+    //     BLE_PutChar(ch + i + 6);
+    //     //set_leds(tx_buffer.tail);
+    //     printf("Val: %d \n", tx_buffer.tail);
+    // }
 
     
     while (TRUE) {
@@ -358,6 +358,7 @@ int main() {
         uint8_t x;
         uint8_t status = BLE_GetChar(&x);
         if (status == SUCCESS) {
+            BLE_PutChar(x); // Loopback test, put the character and send it.
             printf("Msg: %c\n", x); // UART is set to have just a newline ending, so don't need to put it there, '\n'
         }
     }
