@@ -36,6 +36,7 @@ int main() {
     }
 
     
+    int previous = 0;
     while (TRUE) {
         BLE_RunLoop();
         //set_leds(tx_buffer.tail);
@@ -44,8 +45,15 @@ int main() {
         uint8_t x;
         uint8_t status = BLE_GetChar(&x);
         if (status == SUCCESS) {
-            BLE_PutChar(x); // Loopback test, put the character and send it.
+            // BLE_PutChar(x); // Loopback test, put the character and send it.
             printf("Msg: %c\n", x); // UART is set to have just a newline ending, so don't need to put it there, '\n'
+        }
+
+        int delta = TIMERS_GetMilliSeconds() - previous;
+        if (delta > 1000) {
+            uint8_t ch = 'A';
+            BLE_PutChar(ch);
+            previous = TIMERS_GetMilliSeconds();
         }
     }
 
