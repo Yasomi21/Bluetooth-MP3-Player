@@ -152,24 +152,24 @@ class Protocol:
         @name: __receive_characters
         @param mac_address: None
         @return: None
-        @brief: Checks the BluefruitComm's receive buffer for incoming characters, and if there is, 
+        @brief: Checks the BluefruitComm's receive buffer for incoming ASCII integers, and if there is, 
         takes the character to update the FSM used to build the packet.
         """
-        print("Receiving Characters...")
+        # print("Receiving Characters...")
         while (True):
             # Read from the buffer, if there is nothing, wait until the next iteration
-            char = self.bf_client.get_message()
-            if char is None:
+            byte_int = self.bf_client.get_message()
+            if byte_int is None:
                 continue
             
             # Otherwise, update the FSM with the character
-            print("Received the character: ", char)
-            self.__update_fsm(char)
+            # print("Received the character: ", byte_int)
+            self.__update_fsm(byte_int)
     
-    def __compute_iterative_checksum(self, new_char : str, previous_chk_sum : str):
+    def __compute_iterative_checksum(self, char_byte : int, previous_chk_sum : int):
         """
         @name: __compute_iterative_checksum
-        @param new_char: The new character to compute the new checksum on.
+        @param char_byte: The new character (represented in ASCII integer form) to compute the new checksum on.
         @param: previous_chk_sum: The previously calculated checksum.
         @return: None
         @brief: This calculates the checksum of the payload data, whenever a value belonging to the payload is sent, its checksum
@@ -180,17 +180,17 @@ class Protocol:
         
         # Perform circular rotation, then add the bit value of the new character to it (use ord() to convert from char to byte)
         checksum = (checksum >> 1) + (checksum << 7)
-        checksum += ord(new_char)
+        checksum += char_byte
         
         # We only want the bottom 8 bits, so bitmask and with 1111 1111 -> 0xFF
         checksum &= 0xFF
         
         return checksum
     
-    def __update_fsm(self, incoming_char : str):
+    def __update_fsm(self, char_byte : str):
         """
         @name: __update_fsm
-        @param incoming_char -> A character (byte) that is part of the packet. The state machine will determine how its assembled.
+        @param char_byte -> A character (byte) that is part of the packet. The state machine will determine how its assembled. Note: Represented as an INT
         @return: None
         @brief: Starts the event loop necessary to run the thread that is in charge of receiving messages and building the
         packets.
@@ -201,62 +201,64 @@ class Protocol:
             
             case PacketStates.AWAIT_HEAD:
                 # If the incoming character matches the head, insert to packet and transition to next state.
-                if (incoming_char == HEAD):
-                    self._temp_packet.append(ord(incoming_char))
+                if (char_byte == HEAD):
+                    self._temp_packet.append(char_byte)
                     self._current_state = PacketStates.AWAIT_LENGTH
                     
-                print("Head State")
+                # print("Head State")
             
             case PacketStates.AWAIT_LENGTH:
                 # Take in the next character and include to packet, transition to next state.
                 # Assume every character is the length (the checksum will validate this later)
-                self._temp_packet.append(incoming_char)
+                self._temp_packet.append(char_byte)
                 self._current_state = PacketStates.AWAIT_ID
                 
-                print("Length State")
+                # print("Length State")
             
             case PacketStates.AWAIT_ID:
                 # Assume the next character is the ID, insert to payload data, then add to checksum for validation.
                 payload_data = list()
                 self._temp_packet.append(payload_data)
-                payload_data.append(incoming_char)
+                payload_data.append(char_byte)
                 
                 # Append an integer (representing the checksum value) to the packet, it starts at 0
                 check_sum = 0
                 self._temp_packet.append(check_sum)
                 
                 # Checksum calculations, then replace old checksum with the new value.
-                new_checksum = self.__compute_iterative_checksum(incoming_char, check_sum)
+                new_checksum = self.__compute_iterative_checksum(char_byte, check_sum)
                 self._temp_packet[3] = new_checksum # The 3rd index (4th) item inserted is the checksum value.
                 
                 # Transition to next state
                 self._current_state = PacketStates.AWAIT_PAYLOAD
                 
-                print("ID State")
+                # print("ID State")
             
             case PacketStates.AWAIT_PAYLOAD:
                 
-                print("Tail State")
+                # print("Payload State")
                 # Transition condition: If we received a tail value, transition states and exit.
-                if (ord(incoming_char) == TAIL):
-                    self._temp_packet.append(incoming_char)
+                if (char_byte == TAIL):
+                    self._temp_packet.append(char_byte)
                     self._current_state = PacketStates.AWAIT_CHKSUM
                     return
                 
                 # Keep assuming that the new character given is a payload value, update checksum
                 payload_data : list = self._temp_packet[2] # 3rd item in packet is the payload list.
-                payload_data.append(incoming_char)
-                new_checksum : int = self.__compute_iterative_checksum(incoming_char, self._temp_packet[3])
+                payload_data.append(char_byte)
+                new_checksum : int = self.__compute_iterative_checksum(char_byte, self._temp_packet[3])
+                self._temp_packet[3] = new_checksum
             
             case PacketStates.AWAIT_CHKSUM:
                 
-                print("Checksum State")
+                # print("Checksum State")
                 
                 # The next character is the value of the checksum, try to match the value with the calculated
                 # checksum from the sent payload. If the values don't match, then the packet is invalid.
                 # If this is the case, than clear the list and wait for a head.
                 calc_checksum = self._temp_packet[3]
-                if (calc_checksum != incoming_char):
+                
+                if (calc_checksum != char_byte):
                     self._temp_packet.clear()
                     self._current_state = PacketStates.AWAIT_HEAD
                     return
@@ -267,10 +269,10 @@ class Protocol:
             
             case PacketStates.AWAIT_END_RC:
                 
-                print("Return Carriage State")
+                # print("Return Carriage State")
                 # If the new incoming character isn't a return carriage, then assume loss in transition
                 # and try to restart the packet
-                if (ord(incoming_char) != CARRIAGE):
+                if (char_byte != CARRIAGE):
                     self._temp_packet.clear()
                     self._current_state = PacketStates.AWAIT_HEAD
                     return
@@ -280,20 +282,19 @@ class Protocol:
             
             case PacketStates.AWAIT_END_NL:
                 
-                print("New Line State")
+                # print("New Line State")
                 # In every case, transition will be directly back to the head
                 self._current_state = PacketStates.AWAIT_HEAD
                 
                 # Same principle applies as AWAIT_END_RC. The incoming character must be a new line, or else
                 # a loss in transition is assume, packet will restart in this case
-                if (ord(incoming_char) != NEWLINE):
+                if (char_byte != NEWLINE):
                     self._temp_packet.clear()
                     return
                 
                 # The packet is completed, send the packet to the queue for processing, then clear the array
-                if (self.packet_queue.not_full()):
-                    self._temp_packet.clear()
+                if (not self.packet_queue.full()):
                     self.packet_queue.put(copy.deepcopy(self._temp_packet))
-            
+                    self._temp_packet.clear()
             case _:
                 raise("The protocol state machine has reached an undefined state!")

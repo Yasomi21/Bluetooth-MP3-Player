@@ -55,7 +55,7 @@ int main() {
             printf("Sending packet from STM32.\n");
 
             // Every second, construct a packet with a known checksum and send it.
-            // Let's do: 0x8400257D96 → 0xE6 (Known Checksum)
+            // Let's do: 0x8400257D96 → 0xE6 (Known Checksum) This is from ECE121's Lab 1 Checksum Example
             // 0x84 0x00 0x25 0x7D 0x96
             /*
             AWAIT_HEAD - Checks for the head byte to begin packet building.
@@ -87,12 +87,12 @@ int main() {
             uint8_t d4 = 0x7D; //0x7D
             BLE_PutChar(d4);
 
-            uint8_t d5 = 0x85; //0x85
+            uint8_t d5 = 0x96; //0x96
             BLE_PutChar(d5);
 
             uint8_t tail = 0xB9;
             BLE_PutChar(tail);
-            
+
             uint8_t checksum = 0xE6;
             BLE_PutChar(checksum);
 
