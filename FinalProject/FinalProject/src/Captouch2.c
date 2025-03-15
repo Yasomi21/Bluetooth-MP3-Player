@@ -10,7 +10,7 @@
 
 // Defines //
 #define BUFFER_SIZE 10 // The size of the buffer/moving average size.
-#define CAP_THRESHOLD 6 // Experimentally determined threhsold.
+#define CAP_THRESHOLD 60 // Experimentally determined threhsold.
 
 // Globals //
 char first_edge = TRUE;
@@ -20,6 +20,8 @@ int circular_buffer[BUFFER_SIZE] = {0}; // Create an nth size buffer with initia
 unsigned int idx = 0; // Read/Write index of the buffer.
 unsigned int sum = 0; // Sum of the buffer.
 unsigned int average = 0; // Average of the buffer values.
+
+static unsigned int state = FALSE;
 
 /*  PROTOTYPES  */
 /** CAPTOUCH_Init()
@@ -56,12 +58,20 @@ char CAPTOUCH2_IsTouched(void) {
     
     // Debugging (print on the same line and then flush out everything to restart this process):
     // This is used to find the average value of the capacitance.
-    printf("\r\nAverage22222: %d     ", average);
+    //printf("\r\nAverage22222: %d     ", average);
    
-    return FALSE;
+    //return FALSE;
+
+    unsigned int above_thr = (average >= CAP_THRESHOLD);
+    if (above_thr && (state == FALSE)) {
+        state = TRUE;
+    } else if ((!above_thr) && (state == TRUE)) {
+        state = FALSE;
+    }
 
     // If the moving average exceeds the threshold, then return TRUE
-    //return (average >= CAP_THRESHOLD);
+    // return (average >= CAP_THRESHOLD);
+    return state;
 }
 
 

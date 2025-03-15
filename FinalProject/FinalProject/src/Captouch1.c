@@ -5,7 +5,7 @@
 #include <CAPTOUCH1.h>
 #include <timers.h>
 #define NUM_SAMPLES 10  // Number of samples for averaging
-#define THRESH_HOLE 100
+#define THRESH_HOLE 60
 
 char is_first_interrupt = TRUE;
 unsigned int previous_time = 0;
@@ -14,6 +14,8 @@ unsigned int time_differences[NUM_SAMPLES] = {0};
 unsigned int buffer_index = 0;
 unsigned int total_time = 0;
 unsigned int average_time = 0;
+
+static unsigned int state = FALSE;
 
 void CAPTOUCH1_Init(void) {
     // Configure GPIO pin PB5 
@@ -32,8 +34,19 @@ void CAPTOUCH1_Init(void) {
 }
 
 char CAPTOUCH1_IsTouched(void) {
-    printf("\r\nAverage1111: %d     ", average_time);
-    return FALSE;
+    //printf("\r\nAverage1111: %d     ", average_time);
+    //return FALSE;
+
+    unsigned int above_thr = (average_time >= THRESH_HOLE);
+    if (above_thr && (state == FALSE)) {
+        state = TRUE;
+    } else if ((!above_thr) && (state == TRUE)) {
+        state = FALSE;
+    }
+
+
+    return state;
+
     //return (average_time >= THRESH_HOLE);
 }
 /*
