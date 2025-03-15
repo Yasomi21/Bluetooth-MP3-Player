@@ -116,46 +116,39 @@ class Protocol:
         @return: None
         @brief: Returns a fully-formed packet from the queue if there is one, otherwise, it will return None.
         """
-        print("Sending msg")
-        self.bf_client.send_message("asdf")
-        # # Assemble the packet in list form.
-        # packet_to_send = list()
+        # Assemble the packet in list form.
+        packet_to_send = list()
         
-        # # Set the head (we're sending the ASCII ints directly. On the plus side, GATT doesn't have to encode the strings)
-        # packet_to_send.append(HEAD)
+        # Set the head (we're sending the ASCII ints directly. On the plus side, GATT doesn't have to encode the strings)
+        packet_to_send.append(HEAD)
         
-        # # Set the length (the length of the data array in the form of a string)
-        # packet_to_send.append(len(data))
+        # Set the length (the length of the data array in the form of a string)
+        packet_to_send.append(len(data))
         
-        # # Append the payload, also calculate the checksum
-        # checksum = 0
-        # for byte in data:
-        #     packet_to_send.append(byte)
-        #     checksum = self.__compute_iterative_checksum(byte, checksum) # The checksum takes in an integer
+        # Append the payload, also calculate the checksum
+        checksum = 0
+        for byte in data:
+            packet_to_send.append(byte)
+            checksum = self.__compute_iterative_checksum(byte, checksum) # The checksum takes in an integer
         
-        # # Set the tail
-        # packet_to_send.append(TAIL)
+        # Set the tail
+        packet_to_send.append(TAIL)
         
-        # # Set the checksum (convert to a equivalent character first)
-        # packet_to_send.append(checksum)
+        # Set the checksum (convert to a equivalent character first)
+        packet_to_send.append(checksum)
         
-        # # Set the two end bytes, the return carriage '\r' and newline 'n', convert to char first.
-        # packet_to_send.append(CARRIAGE)
-        # packet_to_send.append(NEWLINE)
+        # Set the two end bytes, the return carriage '\r' and newline 'n', convert to char first.
+        packet_to_send.append(CARRIAGE)
+        packet_to_send.append(NEWLINE)
         
-        # # Combine the values of the array into a string using .join()
-        # # print(bytes(packet_to_send))
-        # # packet_str = ''.join(packet_to_send)
+        # Convert each item into a character
+        for i in range(len(packet_to_send)):
+            byte = packet_to_send[i]
+            packet_to_send[i] = chr(byte)
         
-        # # Convert each item into a character
-        # for i in range(len(packet_to_send)):
-        #     byte = packet_to_send[i]
-        #     packet_to_send[i] = chr(byte)
-        
-        # packet_str = "".join(packet_to_send)
-        # print(f"Sending packet: {packet_str}")
-        # print(packet_str.encode())
-        # self.bf_client.send_message(packet_str)
+        # Join the string and send the entire packet as a message
+        packet_str = "".join(packet_to_send)
+        self.bf_client.send_message(packet_str)
 
     
     def __receive_characters(self):
