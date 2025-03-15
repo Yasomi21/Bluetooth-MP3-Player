@@ -39,12 +39,14 @@ def main():
     # Setup event
     event_handler.on_event(Events.EXAMPLE_EVENT, event_cb)
     
+    # Run the event loop
+    event_handler.run_event_loop()
     # Set event loop to prevent termination
-    exit_event = threading.Event()
-    try:
-        exit_event.wait()
-    except KeyboardInterrupt:
-        print("Terminating event_test.py")
+    # exit_event = threading.Event()
+    # try:
+    #     exit_event.wait()
+    # except KeyboardInterrupt:
+    #     print("Terminating event_test.py")
 
 # =============================================
 #                    DRIVER

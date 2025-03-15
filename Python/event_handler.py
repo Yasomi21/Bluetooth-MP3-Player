@@ -99,3 +99,16 @@ class EventHandler:
         
         # Add the event along with the callback to the dictionary
         self._event_callback_dict[event.name] = event_callback
+    
+    def run_event_loop(self):
+        """
+        @name: run_event_loop
+        @param: None
+        @return: None
+        @brief: This event loop is to be ran in the main function to prevent program termination.
+        """
+        exit_event = threading.Event()
+        try:
+            exit_event.wait()
+        except KeyboardInterrupt:
+            print("Terminating EventHandler")

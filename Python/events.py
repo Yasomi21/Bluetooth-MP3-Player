@@ -10,6 +10,8 @@ This integer value represents the message ID you will be sending from your STM32
 Note: Because of the limitations from the MessageID protocol, you can only create 256 events. ( Absolutely devastating :| )
 This is because the MessageID is only a single byte or 8 bits.
 
+NOTE: WHATEVER YOU DO, DON'T ADD ANY COMMAS ONTO THE ENUMS, JUST LEAVE THE NUMBERS AS IS.
+
 IMPORTANT NOTE:
 DON'T CHANGE ANYTHING IN THE FOLLOWING FILES
 - ble_comm.py
@@ -42,6 +44,9 @@ def event_callback(payload):
 # Set up the event
 ev_handler = EventHandler(MAC_ADDRESS, MAX_BUFFER_SIZE)
 ev.on_event(Events.EXAMPLE_EVENT, event_callback)
+
+# Keeps the program alive
+ev.run_event_loop()
 '''
 """
 # =============================================
