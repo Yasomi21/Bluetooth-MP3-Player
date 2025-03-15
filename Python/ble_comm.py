@@ -174,7 +174,6 @@ class BluefruitComm:
         @return: None
         @brief: Reads from the receive buffer to obtain data, should be one byte.
         Note: This byte of data is in integer form. Follow ASCII convention to figure out the character.
-        https://www.ascii-code.com/
         """
         # If the receive queue is empty, return None
         if self.receive_buffer.empty():

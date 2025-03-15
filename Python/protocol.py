@@ -120,31 +120,33 @@ class Protocol:
         # Assemble the packet in list form.
         packet_to_send = list()
         
-        # Set the head (since HEAD is defined as a value, convert it to its ASCII equivalent)
-        packet_to_send.append(chr(HEAD))
+        # Set the head (we're sending the ASCII ints directly. On the plus side, GATT doesn't have to encode the strings)
+        packet_to_send.append(HEAD)
         
         # Set the length (the length of the data array in the form of a string)
-        packet_to_send.append(str(len(data)))
+        packet_to_send.append(len(data))
         
         # Append the payload, also calculate the checksum
         checksum = 0
-        for char in data:
-            packet_to_send.append(char)
-            checksum = self.__compute_iterative_checksum(char, checksum)
+        for byte in data:
+            packet_to_send.append(byte)
+            checksum = self.__compute_iterative_checksum(byte, checksum) # The checksum takes in an integer
         
         # Set the tail
-        packet_to_send.append(chr(TAIL))
+        packet_to_send.append(TAIL)
         
         # Set the checksum (convert to a equivalent character first)
-        packet_to_send.append(chr(checksum))
+        packet_to_send.append(checksum)
         
         # Set the two end bytes, the return carriage '\r' and newline 'n', convert to char first.
-        packet_to_send.append(chr(CARRIAGE))
-        packet_to_send.append(chr(NEWLINE))
+        packet_to_send.append(CARRIAGE)
+        packet_to_send.append(NEWLINE)
         
         # Combine the values of the array into a string using .join()
-        packet_str = ''.join(packet_to_send)
-        self.bf_client.send_message(packet_str)
+        # packet_str = ''.join(packet_to_send)
+        
+        # print(f"Sending packet: {packet_str}")
+        self.bf_client.send_message(packet_to_send)
 
     
     def __receive_characters(self):

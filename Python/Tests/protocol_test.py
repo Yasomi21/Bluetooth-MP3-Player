@@ -10,6 +10,7 @@ Description: This program is meant to run test cases for protocol.py.
 import sys
 import os
 import threading
+import time
 
 # Get the main directory
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -147,12 +148,24 @@ def main():
     print("Running Protocol Test")
     protocol = Protocol(ADAFRUIT_BLE_MAC_ADDR, MAX_QUEUE_SIZE)
 
-    # Keep waiting for a packet
-    while True:
-        packet = protocol.get_packet()
+    # Keep waiting for a packet (Reception Test)
+    # while True:
+    #     packet = protocol.get_packet()
         
-        if packet:
-            print(packet)
+    #     if packet:
+    #         print(packet)
+    
+    # Send packets (Transmission Test)
+    # Data: [204, 5, [132, 0, 37, 125, 150], 230, 185]
+    data = [104, 101, 108, 108, 111] # Prints out hello
+    while True:
+        # Send a packet
+        # print("Transmitting...")
+        protocol.send_packet(data)
+        
+        # Delay a second
+        time.sleep(1)
+        
     
     # Block the program from exiting
     exit_event = threading.Event()

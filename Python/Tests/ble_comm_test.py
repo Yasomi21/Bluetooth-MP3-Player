@@ -38,8 +38,8 @@ def main():
             continue
         
         # Send the message back
-        print(f"The message is: {msg}")
-        bf_comm.send_message(msg)
+        print(f"The message is: {chr(msg)}")
+        bf_comm.send_message("Hello")
     
     # Warning: If we reach the end of the main program, it will terminate unless you prevent it.
     # Notice how GUI libraries have a set_loop() function at the end, those are use for this exact reason.
