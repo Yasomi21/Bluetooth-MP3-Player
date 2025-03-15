@@ -144,27 +144,39 @@ def checksum_test2():
     checksum = compute_iterative_checksum(150, checksum)
     print(f"Checksum: {checksum}")
 
+def find_checksum():
+    # 0x00 0x00 0x25 0x7D 0x96
+    # [0, 0, 37, 125, 150]
+    checksum = 0
+    checksum = compute_iterative_checksum(0, checksum)
+    checksum = compute_iterative_checksum(0, checksum)
+    checksum = compute_iterative_checksum(37, checksum)
+    checksum = compute_iterative_checksum(125, checksum)
+    checksum = compute_iterative_checksum(150, checksum)
+    print(f"Checksum: {checksum}")
+    pass
+
 def main():
     print("Running Protocol Test")
     protocol = Protocol(ADAFRUIT_BLE_MAC_ADDR, MAX_QUEUE_SIZE)
 
     # Keep waiting for a packet (Reception Test) -> Note: The packets are all in integer form.
-    # while True:
-    #     packet = protocol.get_packet()
+    while True:
+        packet = protocol.get_packet()
         
-    #     if packet:
-    #         print(packet)
+        if packet:
+            print(packet)
     
     # Send packets (Transmission Test)
     # Data: [204, 5, [132, 0, 37, 125, 150], 230, 185]
-    data = [104, 101, 108, 108, 111] # Prints out hello
-    while True:
-        # Send a packet
-        # print("Transmitting...")
-        protocol.send_packet(data)
+    # data = [104, 101, 108, 108, 111] # Prints out hello
+    # while True:
+    #     # Send a packet
+    #     # print("Transmitting...")
+    #     protocol.send_packet(data)
         
-        # Delay a second
-        time.sleep(1)
+    #     # Delay a second
+    #     time.sleep(1)
         
     
     # Block the program from exiting

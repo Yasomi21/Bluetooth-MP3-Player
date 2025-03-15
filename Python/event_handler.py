@@ -11,31 +11,15 @@ import asyncio
 import threading
 from enum import Enum
 from protocol import Protocol
+from events import Events
 
 # =============================================
 #                   CONSTANTS
 # =============================================
-ADAFRUIT_BLE_MAC_ADDR = "C0:9E:48:AC:35:03"
-MAX_PACKET_QUEUE_SIZE = 16
 
 # =============================================
 #                   CLASSES
 # =============================================
-class Events(Enum):
-    # Music selection events
-    MUSIC_SELECT_LEFT = 0,
-    MUSIC_SELECT_RIGHT = 1,
-    MUSIC_SELECT = 2,
-    
-    # Song skipping
-    SONG_SKIP_PREV = 3,
-    SONG_SKIP_NEXT = 4,
-    
-    # Playing/pausing sounds
-    SONG_PLAY = 5,
-    SONG_PAUSE = 6,
-    
-
 class EventHandler:
     def __init__(self, mac_address, max_packet_queue_size):
         """
@@ -80,11 +64,14 @@ class EventHandler:
             
             # Find the name of the event based on the ID
             event_name = self._event_dict.get(packet_id)
-            if event_name is None: return
+            if event_name is None:
+                continue
+            
             
             # Find the corresponding callback function associated with the event name
             event_cb = self._event_callback_dict.get(event_name)
-            if event_cb is None: return
+            if event_cb is None:
+                continue
             
             # Call the callback function, sending in the payload as the arguments
             event_cb(packet_payload)
