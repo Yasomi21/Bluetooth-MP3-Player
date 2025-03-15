@@ -18,16 +18,6 @@
 
 int glob_time_micro = 0;
 
-// typedef enum {
-//     NOSENSOR,
-//     CAPRIGHTTOUCH, // Captouch 1
-//     CAPLEFTTOUCH,  // Captouch 2
-//     ROTPRESS,
-//     ROTINCREASE,
-//     ROTDECREASE,
-//     PIEZOTOUCH,
-// }sensorStatus;
-
 // Forward declaration
 void send_packet(char *data, int len);
 unsigned char calc_checksum(unsigned char charIn, unsigned char curChecksum);
@@ -118,49 +108,23 @@ int main(void) {
     ADC_Init();
     BLE_UART_Init();
 
+    PWM_AddPin(PWM_1); // Red
+    PWM_AddPin(PWM_3); // Green
+    PWM_AddPin(PWM_5); // Blue
+
+
     while (TRUE) {
+        
+        PWM_SetDutyCycle(PWM_1, 100);
+        PWM_SetDutyCycle(PWM_3, 0);
+        PWM_SetDutyCycle(PWM_5, 0);
+
         // Run Loop for UART
         BLE_RunLoop();
 
         unsigned int piezo = ADC_Read(ADC_2) * 2; // This is reading the values from the piezo sensor
-        // bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
-        // rotButton = rotButton << 1;
+        bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
         unsigned int rot = QEI_GetPosition(); // This is reading the values from the rotary encoder
-        //char first_touch = CAPTOUCH1_IsTouched();
-        // char second_touch = CAPTOUCH2_IsTouched();
-        //  if (first_touch){
-        //     printf("touch!\n");
-        //  }else{
-        //     printf("nottouch!\n");
-        //  }
-        // prevState = currentState;
-
-        // switch(currentState){
-        //     case NOSENSOR:
-        //         if (CAPTOUCH1_IsTouched()){
-        //             currentState = CAPRIGHTTOUCH;
-        //         } else if (CAPTOUCH2_IsTouched()){
-        //             currentState = CAPLEFTTOUCH;
-        //         } else if (QEI_GetPosition() > 0){
-        //             currentState = ROTINCREASE;
-        //         } else if (QEI_GetPosition() < 0){
-        //             currentState = ROTDECREASE;
-        //         }
-        //         break;
-        //     case CAPRIGHTTOUCH:
-        //         break;
-        //     case CAPLEFTTOUCH:
-        //         break;
-        //     case ROTPRESS:
-        //         break;
-        //     case ROTINCREASE:
-        //         break;
-        //     case ROTDECREASE:
-        //         break;
-        //     case PIEZOTOUCH:
-        //         break;
-        //     default:
-        //         break;
 
         unsigned int ct1_state = CAPTOUCH1_IsTouched();
         if (ct1_state){
@@ -170,7 +134,7 @@ int main(void) {
 
         cap1_count++;
 
-        if (cap1_count > 500) {
+        if (cap1_count > 500) { // Next Song
             if (cap1_trigs > 450) {
                 if (cap1_state == FALSE) {
                     cap1_state = TRUE;
@@ -207,7 +171,7 @@ int main(void) {
 
         cap2_count++;
 
-        if (cap2_count > 100) {
+        if (cap2_count > 100) { // Prev Song
             if (cap2_trigs > 95) {
                 if (cap2_state == FALSE) {
                     cap2_state = TRUE;
@@ -237,25 +201,33 @@ int main(void) {
         // }
         if (rot > 0){ // Scrolling up
             Scroll_Up = 1;
-            //return;
         } else if (rot < 0){ // Scrolling Down
             Scroll_Down = 1; 
-            //return;
-        } 
+        } else if (rot == 20) { // Once reach the end of the music library
+            QEI_ResetPosition();
+        }
         
-        // if () { // Add a case for pressed
-        // }    
+        if (rotButton == 1) { // Rotary Encoder is pressed
+            selectMusic = 1;
+            PWM_SetDutyCycle(PWM_1, 0);
+            PWM_SetDutyCycle(PWM_3, 100);
+            PWM_SetDutyCycle(PWM_5, 0);
+        }    
 
         if (piezo > 70) { // PIEZO is Touched
             //HAL_Delay(350);
-            if (Music_status == 0){
-                Music_status = 1;
-            } else {
+            if (Music_status == 1 && selectMusic == 1){
                 Music_status = 0;
+                PWM_SetDutyCycle(PWM_1, 100);
+                PWM_SetDutyCycle(PWM_3, 0);
+                PWM_SetDutyCycle(PWM_5, 0);
+            } else {
+                Music_status = 1;
+                PWM_SetDutyCycle(PWM_1, 0);
+                PWM_SetDutyCycle(PWM_3, 100);
+                PWM_SetDutyCycle(PWM_5, 0);
             }
-            //return;
         }
-        // printf("Button Status: %d\n\r", rotButton);
     }
 
     BOARD_End();
