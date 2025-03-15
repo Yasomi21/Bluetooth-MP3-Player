@@ -10,7 +10,7 @@
 
 // Defines //
 #define BUFFER_SIZE 10 // The size of the buffer/moving average size.
-#define CAP_THRESHOLD 60 // Experimentally determined threhsold.
+#define CAP_THRESHOLD 50 // Experimentally determined threhsold.
 
 // Globals //
 char first_edge = TRUE;

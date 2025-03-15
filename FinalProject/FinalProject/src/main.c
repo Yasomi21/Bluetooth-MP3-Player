@@ -29,7 +29,7 @@ int glob_time_micro = 0;
 // }sensorStatus;
 
 // Forward declaration
-void send_packet(char *data);
+void send_packet(char *data, int len);
 unsigned char calc_checksum(unsigned char charIn, unsigned char curChecksum);
 
 unsigned char calc_checksum(unsigned char charIn, unsigned char curChecksum){
@@ -41,14 +41,14 @@ unsigned char calc_checksum(unsigned char charIn, unsigned char curChecksum){
 }
 
 
-void send_packet(char *data) {
+void send_packet(char *data, int len) {
 
     // Head
     uint8_t head = 0xCC;
     BLE_PutChar(head);
 
     // Length
-    uint8_t length = 5;
+    uint8_t length = len;
     BLE_PutChar(length);
 
     // Payload
@@ -100,6 +100,12 @@ int Scroll_Down = 0;
 
 bool cap1_state = FALSE;
 bool cap2_state = FALSE;
+
+int cap1_count = 0;
+int cap1_trigs = 0;
+
+int cap2_count = 0;
+int cap2_trigs = 0;
 
 int main(void) {
     // Initialize all modules
@@ -157,30 +163,78 @@ int main(void) {
         //         break;
 
         unsigned int ct1_state = CAPTOUCH1_IsTouched();
-        if (ct1_state && (cap1_state == FALSE)) { // Next Song
-            cap1_state = TRUE;
-            char ch[1];
-            ch[0] = 5;
-            //send_packet(ch);
-            printf("cap1 touched.\n");
-            nextSong = 1;
-            //return;
-        } else if (!ct1_state && (cap1_state == TRUE)) {
-            cap1_state = FALSE;
+        if (ct1_state){
+            // Count the triggers
+            cap1_trigs++;
         }
+
+        cap1_count++;
+
+        if (cap1_count > 500) {
+            if (cap1_trigs > 450) {
+                if (cap1_state == FALSE) {
+                    cap1_state = TRUE;
+                    char ch[2];
+                    ch[0] = 1;
+                    ch[1] = 65;
+                    send_packet(ch, 2);
+                    printf("captouch1\n");
+                }
+            } else if (cap1_state == TRUE) {
+                cap1_state = FALSE;
+            }
+
+            cap1_count = 0;
+            cap1_trigs = 0;
+        }
+        // if (ct1_state && (cap1_state == FALSE)) { // Next Song
+        //     cap1_state = TRUE;
+        //     char ch[1];
+        //     ch[0] = 5;
+        //     //send_packet(ch);
+        //     printf("cap1 touched.\n");
+        //     nextSong = 1;
+        //     //return;
+        // } else if (!ct1_state && (cap1_state == TRUE)) {
+        //     cap1_state = FALSE;
+        // }
         
         unsigned int ct2_state = CAPTOUCH2_IsTouched();
-        if (ct2_state && (cap2_state == FALSE)){ // Previous Song
-            cap2_state = TRUE;
-            char ch[1];
-            ch[0] = 8;
-            printf("cap2 touched.\n");
-            //send_packet(ch);
-            prevSong = 1;
-            //return;
-        } else if (!ct2_state && (cap2_state == TRUE)) {
-            cap2_state = FALSE;
+        if (ct2_state){
+            // Count the triggers
+            cap2_trigs++;
         }
+
+        cap2_count++;
+
+        if (cap2_count > 100) {
+            if (cap2_trigs > 95) {
+                if (cap2_state == FALSE) {
+                    cap2_state = TRUE;
+                    char ch[2];
+                    ch[0] = 2;
+                    ch[1] = 66;
+                    send_packet(ch, 2);
+                    printf("captouch2\n");
+                }
+            } else if (cap2_state == TRUE) {
+                cap2_state = FALSE;
+            }
+
+            cap2_count = 0;
+            cap2_trigs = 0;
+        }
+        // if (ct2_state && (cap2_state == FALSE)){ // Previous Song
+        //     cap2_state = TRUE;
+        //     char ch[1];
+        //     ch[0] = 8;
+        //     printf("cap2 touched.\n");
+        //     //send_packet(ch);
+        //     prevSong = 1;
+        //     //return;
+        // } else if (!ct2_state && (cap2_state == TRUE)) {
+        //     cap2_state = FALSE;
+        // }
         if (rot > 0){ // Scrolling up
             Scroll_Up = 1;
             //return;
@@ -193,7 +247,7 @@ int main(void) {
         // }    
 
         if (piezo > 70) { // PIEZO is Touched
-            HAL_Delay(350);
+            //HAL_Delay(350);
             if (Music_status == 0){
                 Music_status = 1;
             } else {

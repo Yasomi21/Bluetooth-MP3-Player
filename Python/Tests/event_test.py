@@ -32,12 +32,15 @@ MAX_PACKET_QUEUE_SIZE = 16
 def event_cb(payload):
     print("Event triggered", payload)
     
+def event_right_skip(payload):
+    print(f"Switching to the next song... Message: {chr(payload[1])}")
+    
 def main():
     # Create the event handler
     event_handler = EventHandler(ADAFRUIT_BLE_MAC_ADDR, MAX_PACKET_QUEUE_SIZE)
     
     # Setup event
-    event_handler.on_event(Events.EXAMPLE_EVENT, event_cb)
+    event_handler.on_event(Events.MUSIC_SELECT_RIGHT, event_right_skip)
     
     # Run the event loop
     event_handler.run_event_loop()
