@@ -21,7 +21,7 @@
 /******************************************************************************
  * Main
  *****************************************************************************/
-#define MAIN
+// #define MAIN
 #ifdef MAIN
 int main() {
 
@@ -51,7 +51,7 @@ int main() {
 
         int delta = TIMERS_GetMilliSeconds() - previous;
         if (delta > 1000) {
-            uint8_t ch = 'A';
+            uint8_t ch = 'Q';
             BLE_PutChar(ch);
             previous = TIMERS_GetMilliSeconds();
         }

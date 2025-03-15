@@ -11,6 +11,13 @@ https://docs.python.org/3/library/asyncio.html
 https://docs.python.org/3/library/asyncio-eventloop.html
 https://docs.python.org/3/library/asyncio-queue.html#examples
 https://docs.python.org/3/library/queue.html#module-queue
+
+Async Event Loops:
+https://stackoverflow.com/questions/51775413/python-asyncio-run-coroutine-threadsafe-never-running-coroutine
+
+Byte Array to Integer List:
+https://stackoverflow.com/questions/58795086/python-convert-a-byte-array-back-to-list-of-int
+
 """
 # =============================================
 #                   IMPORTS
@@ -67,7 +74,7 @@ class BluefruitComm:
         self._thread = threading.Thread(target=self.start_event_loop, daemon=True)
         self._thread.start()
         
-        # Blocking Code: Wait until the event loop is running, it must run beffore co-routines can be submitted
+        # Blocking Code: Wait until the event loop is running, it must run before co-routines can be submitted
         while (not self.event_loop.is_running()):
             pass
         
@@ -93,7 +100,7 @@ class BluefruitComm:
         @return: None
         @brief: Establishes a connection with the Bluefruit
         """
-        print("Attempting connection")
+        print("Attempting connection to Bluefruit...")
         # Connect with the Bluefruit
         try:
             await self._client.connect()
@@ -107,8 +114,18 @@ class BluefruitComm:
         else:
             print(f"Failed to make a connection with the Bluefruit")
     
-    async def disconnect(self):
-        pass
+    def disconnect(self):
+        """
+        @name: disconnect
+        @param None
+        @return: None
+        @brief: Disconnect the Bluefruit from the device.
+        """
+        # Disconnect the Bluetooth Bleak client (since it is an async function, it must be done inside an event loop)
+        asyncio.run_coroutine_threadsafe(self._client.disconnect(), self.event_loop)
+        
+        # Kill the co-routines
+        self.event_loop.close()
     
     async def on_tx_notify(self, sender, message):
         """
@@ -117,14 +134,18 @@ class BluefruitComm:
         @return: None
         @brief: When a message has been received by the PC, place it into the buffer
         """
-        # print(f"new data? {message.decode()}")
-        # If the buffer/queue is already full, then don't add anymore new data
-        if self.receive_buffer.full():
-            print("Buffer is full.")
-            return
-        
-        # Decode the message first before placing it in buffer (not sure if this is necessary if we're comparing ASCII values later though)
-        self.receive_buffer.put(message.decode())
+         
+        # The message sent is a byte array. If the character is not ASCII, the byte array will represent it as a hex '\0x84' for example.
+        # However, if it is an ASCII character, such as 0x25, it will automaticalily convert to ASCII, to '%' for example.
+        # Convert the byte values into raw integer values, go through each value and send it into the buffer
+        for byte in list(message):
+            
+            # Drop characters if buffer is full.
+            if self.receive_buffer.full():
+                break
+            
+            # Send to the buffer
+            self.receive_buffer.put(byte)
     
     async def process_tx_queue(self):
         """
@@ -133,7 +154,6 @@ class BluefruitComm:
         @return: None
         @brief: Processes messages that are in the packet queue, takes each message and transmits it
         """
-        print("tx queue?")
         while True:
             # If the client isn't connected, then no messages should be processed, wait until the client is connected.
             if (not self._client.is_connected):
@@ -143,9 +163,9 @@ class BluefruitComm:
             # Wait until the packet queue has a messsage
             packet_msg = await self.packet_queue.get()
             
-            # Transmit the packet (defaults to UTF-8)
+            # Transmit the packet (defaults to UTF-8, GATT takes in bytes)
             await self._client.write_gatt_char(ADAFRUIT_BLE_TX_UUID, packet_msg.encode())
-            print("Message transmitted...")
+            # print("Message transmitted...")
         
     def get_message(self) -> str:
         """
