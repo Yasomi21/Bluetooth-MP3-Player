@@ -21,7 +21,7 @@
 /******************************************************************************
  * Main
  *****************************************************************************/
-// #define MAIN
+#define MAIN
 #ifdef MAIN
 int main() {
 
@@ -45,6 +45,7 @@ int main() {
         uint8_t x;
         uint8_t status = BLE_GetChar(&x);
         if (status == SUCCESS) {
+            //printf("h\n");
             printf("Msg: %c\n", x); // UART is set to have just a newline ending, so don't need to put it there, '\n'
         }
 

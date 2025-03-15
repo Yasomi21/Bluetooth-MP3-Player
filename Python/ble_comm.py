@@ -62,6 +62,7 @@ class BluefruitComm:
         # Take MAC address and set up a client
         self.mac_address = mac_address
         self._client = BleakClient(mac_address)
+        self._client_connected = False
         
         # Queue to store received messages/characters (we don't have to worry about memory, so no need for circular buffer)
         self.receive_buffer = Queue(maxsize=MAX_BUFFER_SIZE)
@@ -108,6 +109,8 @@ class BluefruitComm:
             print(f"Error occured during connection attempt: {e}")
             
         if (self._client.is_connected):
+            # Set connection flag to True
+            self._client_connected = True
             print(f"Connected to Bluefruit with address {self.mac_address}")
             # Establish a connection with incoming message events (you're sending it to the Bluefruit's Receive).
             await self._client.start_notify(ADAFRUIT_BLE_RX_UUID, self.on_tx_notify)
@@ -189,6 +192,10 @@ class BluefruitComm:
         @return: None
         @brief: Sends a message by placing it onto the queue.
         """
+        # If the Bluefruit isn't connected yet, don't send any messages (since this is a non async function, I used a flag instead.)
+        if (not self._client_connected):
+            return
+        
         # Why not circular buffer, because the async loop doesn't let you do while True readBuffer(), but await queue.get() is allowed.
         # Create a coroutine safe thread to place the item onto the packet queue (it should stop once item has successfully been placed)
         asyncio.run_coroutine_threadsafe(self.packet_queue.put(protocol_packet), self.event_loop)
