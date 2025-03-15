@@ -148,7 +148,7 @@ def main():
     print("Running Protocol Test")
     protocol = Protocol(ADAFRUIT_BLE_MAC_ADDR, MAX_QUEUE_SIZE)
 
-    # Keep waiting for a packet (Reception Test)
+    # Keep waiting for a packet (Reception Test) -> Note: The packets are all in integer form.
     # while True:
     #     packet = protocol.get_packet()
         
