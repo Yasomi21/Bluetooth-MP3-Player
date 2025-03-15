@@ -5,6 +5,7 @@
 #include <timers.h>
 #include <QEI.h>
 #include <ADC.h>
+#include <stdbool.h>
 
 #include <CAPTOUCH1.h>
 #include <CAPTOUCH2.h>
@@ -45,6 +46,8 @@ int main(void) {
     while (TRUE) {
 
         unsigned int piezo = ADC_Read(ADC_2) * 2; // This is reading the values from the piezo sensor
+        bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
+        rotButton = rotButton << 1;
         unsigned int rot = QEI_GetPosition(); // This is reading the values from the rotary encoder
         //char first_touch = CAPTOUCH1_IsTouched();
         // char second_touch = CAPTOUCH2_IsTouched();
@@ -82,34 +85,35 @@ int main(void) {
         //     default:
         //         break;
 
-        if (CAPTOUCH1_IsTouched()) { // Next Song
-            nextSong = 1;
-            return;
-        } 
-        if (CAPTOUCH2_IsTouched()){ // Previous Song
-            prevSong = 1;
-            return;
-        }
-        if (rot > 0){ // Scrolling up
-            Scroll_Up = 1;
-            return;
-        } else if (rot < 0){ // Scrolling Down
-            Scroll_Down = 1; 
-            return;
-        } 
+        // if (CAPTOUCH1_IsTouched()) { // Next Song
+        //     nextSong = 1;
+        //     return;
+        // } 
+        // if (CAPTOUCH2_IsTouched()){ // Previous Song
+        //     prevSong = 1;
+        //     return;
+        // }
+        // if (rot > 0){ // Scrolling up
+        //     Scroll_Up = 1;
+        //     return;
+        // } else if (rot < 0){ // Scrolling Down
+        //     Scroll_Down = 1; 
+        //     return;
+        // } 
         
-        // if () { // Add a case for pressed
-        // }    
+        // // if () { // Add a case for pressed
+        // // }    
 
-        if (piezo > 70) { // PIEZO is Touched
-            HAL_Delay(350);
-            if (Music_status == 0){
-                Music_status = 1;
-            } else {
-                Music_status = 0;
-            }
-            return;
-        }    
+        // if (piezo > 70) { // PIEZO is Touched
+        //     HAL_Delay(350);
+        //     if (Music_status == 0){
+        //         Music_status = 1;
+        //     } else {
+        //         Music_status = 0;
+        //     }
+        //     return;
+        // }
+        printf("Button Status: %d\n\r", rotButton);
     }
 
     BOARD_End();

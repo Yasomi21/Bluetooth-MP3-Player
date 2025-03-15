@@ -59,6 +59,7 @@
  ******************************************************************************/
 #include <Board.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32f4xx_hal.h"
 #include <stm32f4xx_hal_tim.h>
 
@@ -73,6 +74,8 @@
  * @return none
 */
 void QEI_Init(void);
+
+bool QEI_ButtonStatus(void);
 
 /**
  * @function QEI_GetPosition(void) 
