@@ -97,6 +97,10 @@ int cap1_trigs = 0;
 int cap2_count = 0;
 int cap2_trigs = 0;
 
+bool music_state = false; // Paused state
+
+unsigned int last_piezo = 0;
+
 int main(void) {
     // Initialize all modules
     PWM_Init();
@@ -122,7 +126,6 @@ int main(void) {
         // Run Loop for UART
         BLE_RunLoop();
 
-        unsigned int piezo = ADC_Read(ADC_2) * 2; // This is reading the values from the piezo sensor
         bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
         unsigned int rot = QEI_GetPosition(); // This is reading the values from the rotary encoder
 
@@ -139,7 +142,7 @@ int main(void) {
                 if (cap1_state == FALSE) {
                     cap1_state = TRUE;
                     char ch[2];
-                    ch[0] = 1;
+                    ch[0] = 4; // Message ID
                     ch[1] = 65;
                     send_packet(ch, 2);
                     printf("captouch1\n");
@@ -176,7 +179,7 @@ int main(void) {
                 if (cap2_state == FALSE) {
                     cap2_state = TRUE;
                     char ch[2];
-                    ch[0] = 2;
+                    ch[0] = 5; // Message ID
                     ch[1] = 66;
                     send_packet(ch, 2);
                     printf("captouch2\n");
@@ -214,19 +217,49 @@ int main(void) {
             PWM_SetDutyCycle(PWM_5, 0);
         }    
 
-        if (piezo > 70) { // PIEZO is Touched
-            //HAL_Delay(350);
-            if (Music_status == 1 && selectMusic == 1){
-                Music_status = 0;
-                PWM_SetDutyCycle(PWM_1, 100);
-                PWM_SetDutyCycle(PWM_3, 0);
-                PWM_SetDutyCycle(PWM_5, 0);
-            } else {
-                Music_status = 1;
-                PWM_SetDutyCycle(PWM_1, 0);
-                PWM_SetDutyCycle(PWM_3, 100);
-                PWM_SetDutyCycle(PWM_5, 0);
+        //printf("Piezo: %d Above: %d\n", piezo, piezo > 90);
+        unsigned int piezo = ADC_Read(ADC_2) * 2; // This is reading the values from the piezo sensor
+        if (piezo > 180) { // PIEZO is Touched
+            // Trigger after debounce
+            int delta = TIMERS_GetMilliSeconds() - last_piezo;
+            if (delta > 2000) {
+                //printf("Toggle? %d\n", piezo);
+                if (music_state == TRUE) {
+                    char ch[2];
+                    ch[0] = 6; // Play event
+                    ch[1] = 67;
+                    send_packet(ch, 2);
+                    printf("Play...\n");
+                    music_state = FALSE;
+                } else {
+                    char ch[2];
+                    ch[0] = 7; // Play event
+                    ch[1] = 68;
+                    send_packet(ch, 2);
+                    printf("Pause...\n");
+                    music_state = TRUE;
+                }
+                
+                // Update the time
+                last_piezo = TIMERS_GetMilliSeconds();
             }
+            // Toggle bit to determine pause or play
+            //printf("toggle?\n");
+            
+            //HAL_Delay(350);
+            // if (Music_status == 1 && selectMusic == 1){
+            //     Music_status = 0;
+            //     PWM_SetDutyCycle(PWM_1, 100);
+            //     PWM_SetDutyCycle(PWM_3, 0);
+            //     PWM_SetDutyCycle(PWM_5, 0);
+            //     //printf("piezo pause\n");
+            // } else {
+            //     Music_status = 1;
+            //     PWM_SetDutyCycle(PWM_1, 0);
+            //     PWM_SetDutyCycle(PWM_3, 100);
+            //     PWM_SetDutyCycle(PWM_5, 0);
+            //     //printf("piezo play\n");
+            // }
         }
     }
 
