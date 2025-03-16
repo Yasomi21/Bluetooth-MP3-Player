@@ -113,29 +113,33 @@ class MusicPlayer:
 
     def next_song(self):
         """Play the next song in the playlist"""
-        if self.playlist and self.song_index < len(self.playlist) - 1:
-            self.song_index += 1
+        if self.playlist:
+            self.song_index = (self.song_index + 1) % (len(self.playlist))
             self.current_song = self.playlist[self.song_index]
             pygame.mixer.music.load(self.current_song)
             pygame.mixer.music.play()
-            self.listbox.selection_clear(0, tk.END)
-            self.listbox.selection_set(self.song_index)
-            self.listbox.activate(self.song_index)
-            self.paused = False
+            self.update_listbox_selection()
+            self.pause = False
             self.play_button.config(text="Pause")
+           
 
     def previous_song(self):
         """Play the previous song in the playlist"""
-        if self.playlist and self.song_index > 0:
-            self.song_index -= 1
+        if self.playlist:
+            self.song_index = (self.song_index - 1) % (len(self.playlist))
             self.current_song = self.playlist[self.song_index]
             pygame.mixer.music.load(self.current_song)
             pygame.mixer.music.play()
+            self.update_listbox_selection()
+            self.pause = False
+            self.play_button.config(text="Pause")
+
+    def update_listbox_selection(self):
+            """Update the listbox selection to reflect the currently playing song"""
             self.listbox.selection_clear(0, tk.END)
             self.listbox.selection_set(self.song_index)
             self.listbox.activate(self.song_index)
-            self.paused = False
-            self.play_button.config(text="Pause")
+
 
 
 def prev_cb(payload):
