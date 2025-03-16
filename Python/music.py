@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import Listbox, Scrollbar
 import pygame
 import os
 
@@ -20,6 +20,8 @@ player = None
 # =============================================
 #                     MAIN
 # =============================================
+
+
 class MusicPlayer:
     def __init__(self, master):
         self.master = master
@@ -28,14 +30,23 @@ class MusicPlayer:
         self.song_index = 0
         self.playlist = []
         self.paused = False
+        self.music_folder = "musicfile"  # Default folder
 
         # Initialize pygame mixer
         pygame.mixer.init()
 
-        # Buttons
-        self.load_button = tk.Button(master, text="Load Songs", command=self.load_music)
-        self.load_button.pack()
+        # Listbox to display song list
+        self.listbox = Listbox(master, width=50, height=15)
+        self.listbox.pack()
+        self.listbox.bind("<<ListboxSelect>>", self.select_song)
 
+        # Scrollbar
+        self.scrollbar = Scrollbar(master)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.listbox.yview)
+
+        # Buttons
         self.play_button = tk.Button(master, text="Play", command=self.toggle_play_pause)
         self.play_button.pack()
 
@@ -48,14 +59,32 @@ class MusicPlayer:
         self.previous_button = tk.Button(master, text="Previous", command=self.previous_song)
         self.previous_button.pack()
 
-    def load_music(self):
-        """Load multiple audio files"""
-        file_paths = filedialog.askopenfilenames(defaultextension=".mp3", filetypes=[("Audio Files", "*.mp3;*.wav")])
-        if file_paths:
-            self.playlist = list(file_paths)
-            self.song_index = 0
+        # Auto-load songs from the musicfile directory
+        self.load_music_folder()
+
+    def load_music_folder(self):
+        """Automatically loads all music files from 'musicfile' folder"""
+        if os.path.exists(self.music_folder):
+            self.playlist = [os.path.join(self.music_folder, f) for f in os.listdir(self.music_folder) if f.endswith((".mp3", ".wav"))]
+            self.listbox.delete(0, tk.END)  # Clear existing items
+            for song in self.playlist:
+                self.listbox.insert(tk.END, os.path.basename(song))  # Display only file names
+            
+            if self.playlist:
+                self.song_index = 0
+                self.current_song = self.playlist[self.song_index]
+                pygame.mixer.music.load(self.current_song)
+
+    def select_song(self, event):
+        """Play selected song from the listbox"""
+        selected_index = self.listbox.curselection()
+        if selected_index:
+            self.song_index = selected_index[0]
             self.current_song = self.playlist[self.song_index]
             pygame.mixer.music.load(self.current_song)
+            pygame.mixer.music.play()
+            self.paused = False
+            self.play_button.config(text="Pause")
 
     def toggle_play_pause(self):
         """Toggle between play, pause, and resume"""
@@ -89,6 +118,9 @@ class MusicPlayer:
             self.current_song = self.playlist[self.song_index]
             pygame.mixer.music.load(self.current_song)
             pygame.mixer.music.play()
+            self.listbox.selection_clear(0, tk.END)
+            self.listbox.selection_set(self.song_index)
+            self.listbox.activate(self.song_index)
             self.paused = False
             self.play_button.config(text="Pause")
 
@@ -99,8 +131,12 @@ class MusicPlayer:
             self.current_song = self.playlist[self.song_index]
             pygame.mixer.music.load(self.current_song)
             pygame.mixer.music.play()
+            self.listbox.selection_clear(0, tk.END)
+            self.listbox.selection_set(self.song_index)
+            self.listbox.activate(self.song_index)
             self.paused = False
             self.play_button.config(text="Pause")
+
 
 def prev_cb(payload):
     player.previous_song()
