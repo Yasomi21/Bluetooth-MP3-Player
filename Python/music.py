@@ -75,7 +75,7 @@ class MusicPlayer:
                 self.current_song = self.playlist[self.song_index]
                 pygame.mixer.music.load(self.current_song)
 
-    def select_song(self, event):
+    def select_song(self):
         """Play selected song from the listbox"""
         selected_index = self.listbox.curselection()
         if selected_index:
@@ -140,6 +140,18 @@ class MusicPlayer:
             self.listbox.selection_set(self.song_index)
             self.listbox.activate(self.song_index)
 
+    def select_up(self):
+        """Scroll upward (moves selection downward) with a 500ms delay before updating the selection."""
+        if self.playlist:
+            self.song_index = (self.song_index + 1) % len(self.playlist)
+            self.update_listbox_selection()
+
+    def select_down(self):
+        """Scroll downward (moves selection upward) with a 500ms delay before updating the selection."""
+        if self.playlist:
+            self.song_index = (self.song_index - 1) % len(self.playlist)
+            self.update_listbox_selection()
+
 
 
 def prev_cb(payload):
@@ -153,6 +165,17 @@ def play_cb(payload):
     
 def pause_cb(payload):
     player.toggle_play_pause()
+
+def selectUp_cb(payload):
+    print("select up")
+    player.select_up()
+
+def selectDown_cb(payload):
+    print("select down")
+    player.select_down()
+
+def selectMusic_cb(payload):
+    player.select_song()
     
 def main():
     global player
@@ -167,6 +190,9 @@ def main():
     event_handler.on_event(Events.SONG_SKIP_NEXT, next_cb)
     event_handler.on_event(Events.SONG_PLAY, play_cb)
     event_handler.on_event(Events.SONG_PAUSE, pause_cb)
+    event_handler.on_event(Events.MUSIC_SELECT_UP, selectUp_cb)
+    event_handler.on_event(Events.MUSIC_SELECT_DOWN, selectDown_cb)
+    event_handler.on_event(Events.MUSIC_SELECT, selectMusic_cb)
     root.mainloop()
     
 main()

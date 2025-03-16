@@ -62,8 +62,8 @@ class Events(Enum):
     EXAMPLE_EVENT = 0
     
     # Music selection events
-    MUSIC_SELECT_LEFT = 1
-    MUSIC_SELECT_RIGHT = 2
+    MUSIC_SELECT_UP = 1
+    MUSIC_SELECT_DOWN = 2
     MUSIC_SELECT = 3
     
     # Song skipping
