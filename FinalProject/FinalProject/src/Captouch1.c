@@ -4,6 +4,7 @@
 #include <Board.h>
 #include <CAPTOUCH1.h>
 #include <timers.h>
+#include <buttons.h>
 #define NUM_SAMPLES 10  // Number of samples for averaging
 #define THRESH_HOLE 40
 
@@ -36,14 +37,12 @@ void CAPTOUCH1_Init(void) {
 char CAPTOUCH1_IsTouched(void) {
     //printf("\r\nAverage1111: %d state: %d     ", average_time, average_time >= THRESH_HOLE);
     //return FALSE;
-
     unsigned int above_thr = (average_time >= THRESH_HOLE);
     if (above_thr && (state == FALSE)) {
         state = TRUE;
     } else if ((!above_thr) && (state == TRUE)) {
         state = FALSE;
     }
-
 
     return state;
 

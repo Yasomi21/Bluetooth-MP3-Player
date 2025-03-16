@@ -3,6 +3,7 @@
 #include <QEI.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "bluefruit_ble_uart.h"
 
 // Static variables for encoder state and button press flag
 static volatile int32_t encoder_count = 0;
@@ -93,6 +94,11 @@ void QEI_IRQ(void) {
         (last_state == 0x03 && current_state == 0x02) ||
         (last_state == 0x02 && current_state == 0x00)) {
         encoder_count++;
+        
+        // char ch[2];
+        // ch[0] = 1; // Message ID
+        // ch[1] = 65;
+        // send_packet(ch, 2);
     }
     // Counter-clockwise transitions
     else if ((last_state == 0x00 && current_state == 0x02) ||
@@ -100,13 +106,19 @@ void QEI_IRQ(void) {
              (last_state == 0x03 && current_state == 0x01) ||
              (last_state == 0x01 && current_state == 0x00)) {
         encoder_count--;
+
+        // char ch[2];
+        // ch[0] = 2; // Message ID
+        // ch[1] = 65;
+        // send_packet(ch, 2);
+
     }
     last_state = current_state;
     
     // Wrap the encoder count if necessary
-    if (encoder_count <= -96 || encoder_count >= 96) {
-        encoder_count = 0;
-    }
+    // if (encoder_count <= -96 || encoder_count >= 96) {
+    //     encoder_count = 0;
+    // }
 }
 
 /**

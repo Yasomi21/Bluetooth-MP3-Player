@@ -3,9 +3,11 @@
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 #include <stm32f4xx_hal_tim.h>
+#include <stdbool.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <buttons.h>
 #include <CAPTOUCH2.h>
 
 // Defines //
@@ -20,6 +22,7 @@ int circular_buffer[BUFFER_SIZE] = {0}; // Create an nth size buffer with initia
 unsigned int idx = 0; // Read/Write index of the buffer.
 unsigned int sum = 0; // Sum of the buffer.
 unsigned int average = 0; // Average of the buffer values.
+uint8_t btn4 = 0x08;
 
 static unsigned int state = FALSE;
 
@@ -61,13 +64,14 @@ char CAPTOUCH2_IsTouched(void) {
     //printf("\r\nAverage22222: %d     ", average);
    
     //return FALSE;
-
+    
     unsigned int above_thr = (average >= CAP_THRESHOLD);
     if (above_thr && (state == FALSE)) {
         state = TRUE;
     } else if ((!above_thr) && (state == TRUE)) {
         state = FALSE;
     }
+    
 
     // If the moving average exceeds the threshold, then return TRUE
     // return (average >= CAP_THRESHOLD);

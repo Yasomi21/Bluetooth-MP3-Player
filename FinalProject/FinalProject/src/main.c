@@ -84,7 +84,6 @@ void send_packet(char *data, int len) {
 int nextSong = 0;
 int prevSong = 0;
 int Music_status = 0; // 0 is pause, 1 is play
-int selectMusic = 0;
 int Scroll_Up = 0;
 int Scroll_Down = 0;
 
@@ -100,6 +99,10 @@ int cap2_trigs = 0;
 bool music_state = false; // Paused state
 
 unsigned int last_piezo = 0;
+unsigned int last_Cap1 = 0;
+unsigned int last_Cap2 = 0;
+unsigned int last_rot = 0;
+unsigned int prevRot = 0;
 
 int main(void) {
     // Initialize all modules
@@ -116,7 +119,6 @@ int main(void) {
     PWM_AddPin(PWM_3); // Green
     PWM_AddPin(PWM_5); // Blue
 
-
     while (TRUE) {
         
         PWM_SetDutyCycle(PWM_1, 100);
@@ -127,7 +129,8 @@ int main(void) {
         BLE_RunLoop();
 
         bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
-        unsigned int rot = QEI_GetPosition(); // This is reading the values from the rotary encoder
+        //int rot = abs(QEI_GetPosition()); // This is reading the values from the rotary encoder
+        int rot = QEI_GetPosition();
 
         unsigned int ct1_state = CAPTOUCH1_IsTouched();
         if (ct1_state){
@@ -139,14 +142,19 @@ int main(void) {
 
         if (cap1_count > 500) { // Next Song
             if (cap1_trigs > 450) {
-                if (cap1_state == FALSE) {
-                    cap1_state = TRUE;
-                    char ch[2];
-                    ch[0] = 4; // Message ID
-                    ch[1] = 65;
-                    send_packet(ch, 2);
-                    printf("captouch1\n");
+                // Trigger after debounce
+                int delta = TIMERS_GetMilliSeconds() - last_Cap1;
+                if (delta > 250) {
+                    if (cap1_state == FALSE) {
+                        cap1_state = TRUE;
+                        char ch[2];
+                        ch[0] = 4; // Message ID
+                        ch[1] = 65;
+                        send_packet(ch, 2);
+                        printf("captouch1\n");
+                    }
                 }
+                last_Cap1 = TIMERS_GetMilliSeconds();
             } else if (cap1_state == TRUE) {
                 cap1_state = FALSE;
             }
@@ -154,17 +162,6 @@ int main(void) {
             cap1_count = 0;
             cap1_trigs = 0;
         }
-        // if (ct1_state && (cap1_state == FALSE)) { // Next Song
-        //     cap1_state = TRUE;
-        //     char ch[1];
-        //     ch[0] = 5;
-        //     //send_packet(ch);
-        //     printf("cap1 touched.\n");
-        //     nextSong = 1;
-        //     //return;
-        // } else if (!ct1_state && (cap1_state == TRUE)) {
-        //     cap1_state = FALSE;
-        // }
         
         unsigned int ct2_state = CAPTOUCH2_IsTouched();
         if (ct2_state){
@@ -176,14 +173,20 @@ int main(void) {
 
         if (cap2_count > 100) { // Prev Song
             if (cap2_trigs > 95) {
-                if (cap2_state == FALSE) {
-                    cap2_state = TRUE;
-                    char ch[2];
-                    ch[0] = 5; // Message ID
-                    ch[1] = 66;
-                    send_packet(ch, 2);
-                    printf("captouch2\n");
+                // Trigger after debounce
+                int delta = TIMERS_GetMilliSeconds() - last_Cap2;
+                if (delta > 250) {
+                    if (cap2_state == FALSE) {
+                        cap2_state = TRUE;
+                        char ch[2];
+                        ch[0] = 5; // Message ID
+                        ch[1] = 66;
+                        send_packet(ch, 2);
+                        printf("captouch2\n");
+                    }
                 }
+                // Update the time
+                last_Cap2 = TIMERS_GetMilliSeconds();
             } else if (cap2_state == TRUE) {
                 cap2_state = FALSE;
             }
@@ -191,30 +194,38 @@ int main(void) {
             cap2_count = 0;
             cap2_trigs = 0;
         }
-        // if (ct2_state && (cap2_state == FALSE)){ // Previous Song
-        //     cap2_state = TRUE;
-        //     char ch[1];
-        //     ch[0] = 8;
-        //     printf("cap2 touched.\n");
-        //     //send_packet(ch);
-        //     prevSong = 1;
-        //     //return;
-        // } else if (!ct2_state && (cap2_state == TRUE)) {
-        //     cap2_state = FALSE;
-        // }
-        if (rot > 0){ // Scrolling up
-            Scroll_Up = 1;
-        } else if (rot < 0){ // Scrolling Down
-            Scroll_Down = 1; 
-        } else if (rot == 20) { // Once reach the end of the music library
-            QEI_ResetPosition();
+
+        if (rot > prevRot){ // Scrolling up
+            prevRot = rot;
+            char ch[2];
+            ch[0] = 1; // Message ID
+            ch[1] = 65;
+            send_packet(ch, 2);
+            printf("scrolling up\n");
+        } else if (rot < prevRot){ // Scrolling Down
+            prevRot = rot;
+            char ch[2];
+            ch[0] = 2; // Message ID
+            ch[1] = 65;
+            send_packet(ch, 2);
+            printf("scrolling down\n");
         }
         
         if (rotButton == 1) { // Rotary Encoder is pressed
-            selectMusic = 1;
-            PWM_SetDutyCycle(PWM_1, 0);
-            PWM_SetDutyCycle(PWM_3, 100);
-            PWM_SetDutyCycle(PWM_5, 0);
+            // Trigger after debounce
+            int delta = TIMERS_GetMilliSeconds() - last_rot;
+            if (delta > 500) {
+                PWM_SetDutyCycle(PWM_1, 0);
+                PWM_SetDutyCycle(PWM_3, 100);
+                PWM_SetDutyCycle(PWM_5, 0);
+                char ch[2];
+                ch[0] = 3; // Message ID
+                ch[1] = 65;
+                send_packet(ch, 2);
+                printf("select music\n");
+            }
+            // Update the time
+            last_rot = TIMERS_GetMilliSeconds();
         }    
 
         //printf("Piezo: %d Above: %d\n", piezo, piezo > 90);
@@ -222,7 +233,7 @@ int main(void) {
         if (piezo > 180) { // PIEZO is Touched
             // Trigger after debounce
             int delta = TIMERS_GetMilliSeconds() - last_piezo;
-            if (delta > 2000) {
+            if (delta > 500) {
                 //printf("Toggle? %d\n", piezo);
                 if (music_state == TRUE) {
                     char ch[2];
@@ -231,6 +242,9 @@ int main(void) {
                     send_packet(ch, 2);
                     printf("Play...\n");
                     music_state = FALSE;
+                    PWM_SetDutyCycle(PWM_1, 100);
+                    PWM_SetDutyCycle(PWM_3, 0);
+                    PWM_SetDutyCycle(PWM_5, 0);
                 } else {
                     char ch[2];
                     ch[0] = 7; // Play event
@@ -238,28 +252,13 @@ int main(void) {
                     send_packet(ch, 2);
                     printf("Pause...\n");
                     music_state = TRUE;
+                    PWM_SetDutyCycle(PWM_1, 0);
+                    PWM_SetDutyCycle(PWM_3, 100);
+                    PWM_SetDutyCycle(PWM_5, 0);
                 }
-                
                 // Update the time
                 last_piezo = TIMERS_GetMilliSeconds();
             }
-            // Toggle bit to determine pause or play
-            //printf("toggle?\n");
-            
-            //HAL_Delay(350);
-            // if (Music_status == 1 && selectMusic == 1){
-            //     Music_status = 0;
-            //     PWM_SetDutyCycle(PWM_1, 100);
-            //     PWM_SetDutyCycle(PWM_3, 0);
-            //     PWM_SetDutyCycle(PWM_5, 0);
-            //     //printf("piezo pause\n");
-            // } else {
-            //     Music_status = 1;
-            //     PWM_SetDutyCycle(PWM_1, 0);
-            //     PWM_SetDutyCycle(PWM_3, 100);
-            //     PWM_SetDutyCycle(PWM_5, 0);
-            //     //printf("piezo play\n");
-            // }
         }
     }
 
