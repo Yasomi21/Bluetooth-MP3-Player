@@ -118,19 +118,17 @@ int main(void) {
     PWM_AddPin(PWM_1); // Red
     PWM_AddPin(PWM_3); // Green
     PWM_AddPin(PWM_5); // Blue
+        
+    PWM_SetDutyCycle(PWM_1, 65);
+    PWM_SetDutyCycle(PWM_3, 100);
+    PWM_SetDutyCycle(PWM_5, 0);
 
     while (TRUE) {
-        
-        PWM_SetDutyCycle(PWM_1, 100);
-        PWM_SetDutyCycle(PWM_3, 0);
-        PWM_SetDutyCycle(PWM_5, 0);
-
         // Run Loop for UART
         BLE_RunLoop();
 
         bool rotButton = QEI_ButtonStatus(); // This is reading the values from the rotary encoder button
-        //int rot = abs(QEI_GetPosition()); // This is reading the values from the rotary encoder
-        int rot = QEI_GetPosition();
+        int rot = QEI_GetPosition(); // This is reading the values from the rotary encoder
 
         unsigned int ct1_state = CAPTOUCH1_IsTouched();
         if (ct1_state){
@@ -212,12 +210,10 @@ int main(void) {
         }
         
         if (rotButton == 1) { // Rotary Encoder is pressed
+            music_state = true;
             // Trigger after debounce
             int delta = TIMERS_GetMilliSeconds() - last_rot;
             if (delta > 500) {
-                PWM_SetDutyCycle(PWM_1, 0);
-                PWM_SetDutyCycle(PWM_3, 100);
-                PWM_SetDutyCycle(PWM_5, 0);
                 char ch[2];
                 ch[0] = 3; // Message ID
                 ch[1] = 65;
@@ -235,33 +231,36 @@ int main(void) {
             int delta = TIMERS_GetMilliSeconds() - last_piezo;
             if (delta > 500) {
                 //printf("Toggle? %d\n", piezo);
-                if (music_state == TRUE) {
+                if (music_state == true) {
+                    music_state = false;
                     char ch[2];
                     ch[0] = 6; // Play event
                     ch[1] = 67;
                     send_packet(ch, 2);
                     printf("Play...\n");
-                    music_state = FALSE;
-                    PWM_SetDutyCycle(PWM_1, 100);
-                    PWM_SetDutyCycle(PWM_3, 0);
-                    PWM_SetDutyCycle(PWM_5, 0);
                 } else {
+                    music_state = true;
                     char ch[2];
                     ch[0] = 7; // Play event
                     ch[1] = 68;
                     send_packet(ch, 2);
                     printf("Pause...\n");
-                    music_state = TRUE;
-                    PWM_SetDutyCycle(PWM_1, 0);
-                    PWM_SetDutyCycle(PWM_3, 100);
-                    PWM_SetDutyCycle(PWM_5, 0);
                 }
                 // Update the time
                 last_piezo = TIMERS_GetMilliSeconds();
             }
         }
+        
+        if (music_state == true) {
+            PWM_SetDutyCycle(PWM_1, 100);
+            PWM_SetDutyCycle(PWM_3, 0);
+            PWM_SetDutyCycle(PWM_5, 100);
+        } else {
+            PWM_SetDutyCycle(PWM_1, 65);
+            PWM_SetDutyCycle(PWM_3, 100);
+            PWM_SetDutyCycle(PWM_5, 0);
+        }
     }
-
     BOARD_End();
     return 0;
 }

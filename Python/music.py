@@ -36,7 +36,7 @@ class MusicPlayer:
         pygame.mixer.init()
 
         # Listbox to display song list
-        self.listbox = Listbox(master, width=50, height=15)
+        self.listbox = Listbox(master, width=100, height=30)
         self.listbox.pack()
         self.listbox.bind("<<ListboxSelect>>", self.select_song)
 
@@ -167,11 +167,9 @@ def pause_cb(payload):
     player.toggle_play_pause()
 
 def selectUp_cb(payload):
-    print("select up")
     player.select_up()
 
 def selectDown_cb(payload):
-    print("select down")
     player.select_down()
 
 def selectMusic_cb(payload):
