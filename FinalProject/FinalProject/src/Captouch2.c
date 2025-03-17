@@ -1,127 +1,149 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <Board.h>
 #include <timers.h>
-#include <stdint.h>
 #include "stm32f4xx_hal.h"
 #include <stm32f4xx_hal_tim.h>
 #include <stdbool.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <buttons.h>
 #include <CAPTOUCH2.h>
+#include <buttons.h>
 
-// Defines //
-#define BUFFER_SIZE 10 // The size of the buffer/moving average size.
-#define CAP_THRESHOLD 50 // Experimentally determined threhsold.
+// Defines for capacitive touch
+#define BUFFER_SIZE    10    // Size of the moving average buffer
+#define CAP_THRESHOLD  50    // Experimentally determined threshold
 
-// Globals //
+// Global variables for capacitive touch measurement
 char first_edge = TRUE;
 int last_edge = 0;
 int current_edge = 0;
-int circular_buffer[BUFFER_SIZE] = {0}; // Create an nth size buffer with initial values of 0.
-unsigned int idx = 0; // Read/Write index of the buffer.
-unsigned int sum = 0; // Sum of the buffer.
-unsigned int average = 0; // Average of the buffer values.
-uint8_t btn4 = 0x08;
+int circular_buffer[BUFFER_SIZE] = {0};
+unsigned int idx = 0;
+unsigned int sum = 0;
+unsigned int average = 0;
+static unsigned int touchState = FALSE; // TRUE if touch detected
 
-static unsigned int state = FALSE;
+// Timer3 handle for periodic processing
+TIM_HandleTypeDef htim3;
 
-/*  PROTOTYPES  */
-/** CAPTOUCH_Init()
- *
- * This function initializes the module for use. Initialization is done by
- * opening and configuring timer 2, opening and configuring the GPIO pin and
- * setting up the interrupt.
- */
+// Define a state machine for the timer interrupt
+typedef enum {
+    TOUCH_CHECK,  // Regularly check if the sensor is touched
+    TOUCH_RESET   // Wait for the sensor to be released
+} TouchTimerState;
+
+static TouchTimerState currentTouchState = TOUCH_CHECK;
+
+/*--------------------------------------------------------------
+    Function Prototypes
+--------------------------------------------------------------*/
+void CAPTOUCH2_Init(void);
+char CAPTOUCH2_IsTouched(void);
+void Timer3_Init(void);
+
+/*--------------------------------------------------------------
+    CAPTOUCH2 Initialization
+    - Configures the sensor input pin (using PD2 in this example)
+    - Sets up the external interrupt and the timer for measurement.
+--------------------------------------------------------------*/
 void CAPTOUCH2_Init(void) {
-    //Configure GPIO pin PB5 
-    GPIO_InitTypeDef GPIO_InitStruct2 = {0};
-    GPIO_InitStruct2.Pin = GPIO_PIN_2;
-    GPIO_InitStruct2.Mode = GPIO_MODE_IT_RISING;
-    GPIO_InitStruct2.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct2);
+    // Initialize the board and the timer used for microsecond timing.
+    BOARD_Init();
+    TIMER_Init();
+    
+    // Configure sensor input on PD2 (adjust as needed for your board)
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_2;
+    // Using rising edge interrupt; if needed, you could also detect falling edges.
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-    // EXTI interrupt init
+    // Configure NVIC for the sensor interrupt
     HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
-    // the rest of the function goes here
-    TIMER_Init(); // Initialize the timer
+    // Initialize Timer3 for periodic sampling of the capacitive touch sensor.
+    Timer3_Init();
 }
 
-/** CAPTOUCH_IsTouched(void)
- *
- * Returns TRUE if finger is detected. Averaging of previous measurements may
- * occur within this function, however you are NOT allowed to do any I/O inside
- * this function.
- *
- * @return  (char)    [TRUE, FALSE]
- */
+/*--------------------------------------------------------------
+    CAPTOUCH2_IsTouched()
+    - Uses the moving average of the raw measurement (updated in EXTI2 IRQ)
+      and compares it to a threshold.
+--------------------------------------------------------------*/
 char CAPTOUCH2_IsTouched(void) {
     
-    // Debugging (print on the same line and then flush out everything to restart this process):
-    // This is used to find the average value of the capacitance.
-    //printf("\r\nAverage22222: %d     ", average);
-   
-    //return FALSE;
+    if (average >= CAP_THRESHOLD)
+        touchState = TRUE;
+    else
+        touchState = FALSE;
     
-    unsigned int above_thr = (average >= CAP_THRESHOLD);
-    if (above_thr && (state == FALSE)) {
-        state = TRUE;
-    } else if ((!above_thr) && (state == TRUE)) {
-        state = FALSE;
-    }
-    
-
-    // If the moving average exceeds the threshold, then return TRUE
-    // return (average >= CAP_THRESHOLD);
-    return state;
+    return touchState;
 }
 
-
-// Interrupts
-// external interrupt ISR for rising edge of pin PB5
-/*
-Assuming this is an Input Capture interrupt, where it only triggers whenever a rising edge is detected.
-Without knowing the behavior, not sure.
-But assume to update with the time pressed since last and in the IsTouched function average out the previous measurements.
-*/
+/*--------------------------------------------------------------
+    External Interrupt Handler for Sensor Input (PD2)
+    - Each rising edge is used to compute the time delta (in microseconds)
+      between events. A moving average is computed by using a circular buffer.
+--------------------------------------------------------------*/
 void EXTI2_IRQHandler(void) {
-    // EXTI line interrupt detected 
-    if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_2) != RESET) {
-        // Clear interrupt flag.
+    if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_2) != RESET) {
         __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
-
-        // Anything that needs to happen on rising edge of PB5
-        // (ENC_B).
-
-        // Whenever the rising edge is triggered.
-        // If interrupt is triggered for the first time, then prevent trigger by setting current and previous to zero.
-        // Otherwise, update the previous time to current and current to the time now in microseconds.
+        
         if (first_edge) {
             last_edge = TIMERS_GetMicroSeconds();
-            first_edge = TIMERS_GetMicroSeconds();
-            first_edge = FALSE; // Prevent this from triggering again.
+            current_edge = TIMERS_GetMicroSeconds();
+            first_edge = FALSE;
         } else {
             last_edge = current_edge;
             current_edge = TIMERS_GetMicroSeconds();
         }
-
-        // Subtract the value you are overwriting from the sum before overwriting.
+        
+        // Update the moving average buffer:
         sum -= circular_buffer[idx];
-
-        // Write the delta value into the buffer.
-        unsigned int delta = current_edge - last_edge; // Difference between rising edges to get estimated touch time.
+        unsigned int delta = current_edge - last_edge;
         circular_buffer[idx] = delta;
-
-        // Add the delta to the sum to get the new sum
-        // This is more efficient than going through the buffer to get the sum.
         sum += delta;
-
-        // Increment the circular buffer
         idx = (idx + 1) % BUFFER_SIZE;
-
-        // Calculate and update the moving average.
         average = sum / BUFFER_SIZE;
     }
 }
+
+/*--------------------------------------------------------------
+    Timer3 Initialization
+    - Configures Timer3 to trigger an interrupt at a fixed period.
+    - In this example, we use a 10 ms period (adjust prescaler/period as needed).
+--------------------------------------------------------------*/
+void Timer3_Init(void) {
+    __HAL_RCC_TIM3_CLK_ENABLE();
+    
+    // For example, assume the system clock is 84MHz.
+    // With a prescaler of 8400-1, the timer clock is 10 kHz.
+    // Setting Period to 100-1 gives a period of 100/10,000 = 10ms.
+    htim3.Instance = TIM3;
+    htim3.Init.Prescaler = 8400 - 1;
+    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim3.Init.Period = 100 - 1;
+    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    
+    if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
+        // Handle error appropriately (e.g., loop indefinitely)
+        while (1);
+    }
+    
+    // Configure NVIC for Timer3 interrupts
+    HAL_NVIC_SetPriority(TIM3_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(TIM3_IRQn);
+    
+    // Start Timer3 in interrupt mode
+    HAL_TIM_Base_Start_IT(&htim3);
+}
+
+/*--------------------------------------------------------------
+    Timer3 Interrupt Handler
+--------------------------------------------------------------*/
+void TIM3_IRQHandler(void) {
+    HAL_TIM_IRQHandler(&htim3);
+}
+
