@@ -17,6 +17,7 @@
 #define A_LOT       183000
 
 int glob_time_micro = 0;
+unsigned char packet_count = 0;
 
 // Forward declaration
 void send_packet(char *data, int len);
@@ -195,11 +196,16 @@ int main(void) {
 
         if (rot > prevRot){ // Scrolling up
             prevRot = rot;
-            char ch[2];
+            char t = TIMERS_GetMilliSeconds();
+            char ch[4];
             ch[0] = 1; // Message ID
-            ch[1] = 65;
-            send_packet(ch, 2);
+            ch[1] = packet_count;
+            ch[2] = t >> 8; // Uper half
+            ch[3] = t; // Lower half
+
+            send_packet(ch, 4);
             printf("scrolling up\n");
+            packet_count++;
         } else if (rot < prevRot){ // Scrolling Down
             prevRot = rot;
             char ch[2];
